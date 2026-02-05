@@ -21,9 +21,16 @@ export interface Message {
   widgetAction?: WidgetAction;
 }
 
+export interface SessionInfo {
+  session: string;
+  baseUrl?: string;
+  clusterId?: number;
+}
+
 export interface ChatRequest {
   messages: Message[];
   conversationId?: string;
+  sessionInfo?: SessionInfo;
 }
 
 // ============================================================================

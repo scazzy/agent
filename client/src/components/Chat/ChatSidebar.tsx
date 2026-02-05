@@ -1,9 +1,10 @@
 import React from 'react';
 import { Flex, Typography, Button, Space } from 'antd';
-import { DeleteOutlined, RobotOutlined } from '@ant-design/icons';
+import { DeleteOutlined, RobotOutlined, LogoutOutlined } from '@ant-design/icons';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { useChatAgent } from '../../hooks/useChatAgent';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 
@@ -13,6 +14,7 @@ const { Title, Text } = Typography;
  */
 export const ChatSidebar: React.FC = () => {
   const { messages, isLoading, status, sendMessage, handleWidgetAction, clearMessages } = useChatAgent();
+  const { logout, session } = useAuth();
 
   return (
     <Flex
@@ -37,15 +39,18 @@ export const ChatSidebar: React.FC = () => {
           <RobotOutlined style={{ fontSize: 24, color: '#1890ff' }} />
           <Flex vertical gap={0}>
             <Title level={4} style={{ margin: 0 }}>
-              AI Assistant
+              Scazzy AI
             </Title>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Chat with widgets
+              Productivity agent
             </Text>
           </Flex>
         </Flex>
 
         <Space>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {session?.email}
+          </Text>
           <Button
             size="small"
             icon={<DeleteOutlined />}
@@ -53,6 +58,14 @@ export const ChatSidebar: React.FC = () => {
             disabled={messages.length === 0}
           >
             Clear
+          </Button>
+          <Button
+            size="small"
+            icon={<LogoutOutlined />}
+            onClick={logout}
+            danger
+          >
+            Logout
           </Button>
         </Space>
       </Flex>

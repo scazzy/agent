@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ChatMessage, WidgetActionPayload } from '../types/messages';
 import { WidgetBlock, Message as ProtocolMessage } from '../types/protocol';
 import { chatClient } from '../lib/chat-client';
+import { authService } from '../lib/auth-service';
 import { message as antdMessage } from 'antd';
 
 /**
@@ -57,10 +58,19 @@ export function useChatAgent() {
             : undefined,
         });
 
+        // Get session info for authenticated API calls
+        const session = authService.getSession();
+        const sessionInfo = session ? {
+          session: session.session,
+          baseUrl: session.baseUrl,
+          clusterId: session.clusterId,
+        } : undefined;
+
         // Stream response
         const stream = chatClient.streamChat({
           messages: protocolMessages,
           conversationId,
+          sessionInfo,
         });
 
         for await (const event of stream) {

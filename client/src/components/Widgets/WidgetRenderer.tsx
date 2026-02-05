@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert } from 'antd';
+import { Alert, Card } from 'antd';
 import { WidgetBlock } from '../../types/protocol';
 import { WidgetRegistry } from './WidgetRegistry';
 import { DynamicWidget } from './DynamicWidget';
@@ -16,6 +16,18 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ widget, onAction
   // Check if it's a custom VDOM widget
   if (widget.type === 'custom' && widget.vdom) {
     return <DynamicWidget widget={widget} onAction={onAction} />;
+  }
+
+  // Handle custom widgets with HTML content
+  if (widget.type === 'custom' && widget.data?.content) {
+    return (
+      <Card size="small" style={{ marginTop: 8 }}>
+        <div 
+          dangerouslySetInnerHTML={{ __html: widget.data.content }} 
+          style={{ maxHeight: 400, overflow: 'auto' }}
+        />
+      </Card>
+    );
   }
 
   // Look up widget component in registry

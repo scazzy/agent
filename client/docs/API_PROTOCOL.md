@@ -643,4 +643,331 @@ Breaking changes will be documented here with migration paths.
 
 ---
 
+# Titan Mail APIs
+
+Backend APIs for fetching email messages from Titan Mail.
+
+**Base URL (Staging):** `https://flockmail-backend.flock-staging.com/fa`
+
+All Titan Mail APIs require authentication via session token obtained from login.
+
+## Folder APIs
+
+### GET /folders
+
+Fetch the list of email folders for the user.
+
+**Response:**
+```json
+{
+  "folders": [
+    {
+      "folder_id": 1,
+      "name": "INBOX",
+      "type": "INBOX",
+      "unread_count": 5,
+      "total_count": 120
+    },
+    {
+      "folder_id": 2,
+      "name": "Sent",
+      "type": "SENT",
+      "unread_count": 0,
+      "total_count": 45
+    }
+  ]
+}
+```
+
+**Note:** Folders must be fetched first to get valid `folder_id` values for the messages API.
+
+---
+
+## Message APIs
+
+### GET /messages
+
+Fetch messages in a folder.
+
+**Request Params:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| folder_id | Long | Yes | Folder ID |
+| cursor | Long | Yes | Date after which messages to fetch. Use `null` for initial fetch. |
+| limit | Integer | No | Number of messages to fetch |
+| folder_type | String | Yes | Folder Type (e.g., "INBOX", "SENT", "DRAFTS") |
+| I | Integer | No | Filter bitmask: bit 0=STAR, bit 1=UNREAD, bit 2=PRIORITY, bit 3=NON-PRIORITY |
+
+**Response:**
+```json
+{
+  "messages": [<Message>, <Message>, ...]
+}
+```
+
+**Usage Notes:**
+- Use `cursor=null` for initial fetch
+- Store returned cursor value for pagination
+- Agent should fetch latest/new messages based on last cursor
+
+---
+
+### GET /v2/messages/body
+
+Fetch full message body on user click.
+
+**Request Params:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| mid | String | Yes | Message ID |
+| mhid | String | Yes | Message Header ID |
+| grc | Boolean | Yes | True if read receipts count is required |
+
+**Response:**
+```json
+{
+  "body": "<html>Email body content</html>",
+  "rc": 1
+}
+```
+
+---
+
+### GET /message/body/snippet
+
+Fetch message body snippet for long messages.
+
+**Request Params:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| mid | String | Yes | Message ID |
+| len | Integer | No | Snippet length (default: 1000, max: 5000) |
+
+**Response:**
+```json
+{
+  "msgSnippet": "<string>"
+}
+```
+
+---
+
+### POST /search
+
+Search emails by various criteria including full-text search.
+
+**Request:**
+```json
+{
+  "from": ["john@example.com"],
+  "to": ["user@example.com"],
+  "contact": ["anyone@example.com"],
+  "in": "INBOX",
+  "subject": ["project", "update"],
+  "words": "search terms",
+  "sf": { "comp": "LT", "size": 1048576 },
+  "df": { "st": "2024-01-01", "en": "2024-02-01" },
+  "s": true,
+  "u": true,
+  "pt": "page_token_from_previous",
+  "ps": 200,
+  "type": "m",
+  "lid": 1,
+  "ha": true
+}
+```
+
+**Request Params:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| from | Array | No | List of sender emails |
+| to | Array | No | List of receiver emails (to, cc, bcc) |
+| contact | Array | No | List of emails (sender OR receiver) |
+| in | String | No | Folder name to search in |
+| subject | Array | No | Subject keywords |
+| words | String | Yes | Full-text search query |
+| sf | Object | No | Size filter: `{comp: "LT"|"GT", size: bytes}` |
+| df | Object | No | Date filter: `{st: "yyyy-mm-dd", en: "yyyy-mm-dd"}` |
+| s | Boolean | No | Starred only |
+| u | Boolean | No | Unread only |
+| pt | String | No | Page token for pagination |
+| ps | Integer | No | Page size (default: 200) |
+| type | String | No | `"t"` for threads, `"m"` for messages |
+| lid | Integer | No | Label ID |
+| ha | Boolean | No | Has attachment |
+
+**Response:**
+```json
+{
+  "threads": [...],
+  "messages": [...],
+  "c": false,
+  "pt": "next_page_token"
+}
+```
+
+- `c` = true means search is complete (no more results)
+- `pt` = page token for fetching next page
+
+---
+
+### POST /messages/body/link
+
+Batch fetch message body links (for background fetching).
+
+**Request:**
+```json
+{
+  "msgBodyReqs": [
+    {
+      "mid": "<message_id>",
+      "mhid": "<message_header_id>",
+      "grc": true
+    },
+    ...
+  ]
+}
+```
+
+**Limits:** Max 20 items in `msgBodyReqs`
+
+**Response:**
+```json
+{
+  "midToMsgBodyLink": {
+    "<mid>": {
+      "cfBodyUrl": "<cloudfront-body-url>",
+      "rc": <integer>
+    },
+    ...
+  }
+}
+```
+
+**CloudFront Response Format:**
+```json
+{
+  "h": ...,
+  "Ph": ...,
+  "s": "<string>",
+  "hb": "<string>"  // html body
+}
+```
+
+---
+
+### POST /messages/body/link/v2
+
+Enhanced batch fetch with UMID support.
+
+**Request:**
+```json
+{
+  "msgBodyReqs": [
+    {
+      "umid": <long>,
+      "mhid": "<message_header_id>",
+      "grc": true,
+      "mpi": <MimePartInfo>
+    },
+    ...
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "umidToMsgBodyLink": {
+    "<umid>": {
+      "cfBodyUrl": "<cloudfront-body-url>",
+      "rc": <integer>
+    }
+  }
+}
+```
+
+---
+
+## Error Codes
+
+| Error | HTTP Status | Description |
+|-------|-------------|-------------|
+| InvalidParameter | 400 | Invalid request parameters |
+| IMAPMessageNotFound | 404 | Message not found |
+| CloudFront 404 | 404 | Body not present in S3 |
+
+---
+
+## Data Models
+
+### Message
+
+| Field | Type | Description |
+|-------|------|-------------|
+| mid | String | Unique Message ID |
+| mhid | String | Message Header ID |
+| folder_id | Long | Folder ID |
+| thread_id | Long | Thread ID |
+| uid | Long | Message UID |
+| from | Participant[] | Sender |
+| to | Participant[] | Recipients |
+| cc | Participant[] | CC recipients |
+| bcc | Participant[] | BCC recipients |
+| subject | String | Subject line |
+| snippet | String | Message preview snippet |
+| files | FileInfo[] | Attachments |
+| u | Boolean | Is unread |
+| s | Boolean | Is starred |
+| d | Boolean | Is draft |
+| t | Boolean | Is tracked |
+| headers | MessageHeaders | Message headers |
+| body | String | Message body (if fetched) |
+| state | Integer | Bitset: unread(0), star(1), draft(2), attachment(3), tracked(4), etc. |
+| lids | Integer[] | Label IDs |
+
+### Participant
+
+| Field | Type | Description |
+|-------|------|-------------|
+| email | String | Email address |
+| name | String | Display name |
+| fn | String | First name |
+| ln | String | Last name |
+| bi | Long | BIMI ID for icon |
+
+### Thread
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tid | Long | Thread ID |
+| msg_count | Integer | Total message count |
+| unread_count | Integer | Unread message count |
+| star_count | Integer | Starred count |
+| attachment_count | Integer | Attachment count |
+| subject | String | Thread subject |
+| snippet | String | Last message snippet |
+| tp | ThreadParticipants | Participants (from, to, bcc) |
+| folder_ids | Long[] | Folder IDs |
+| last_message_recieved_timestamp | Long | Last received timestamp |
+| state | Integer | Thread state bitset |
+| lids | Integer[] | Label IDs |
+
+### FileInfo
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | String | File ID |
+| filename | String | File name |
+| disposition | Enum | INLINE or ATTACHMENT |
+| content_type | String | MIME type |
+| size | Long | File size in bytes |
+| encoding | String | Content encoding |
+
+---
+
 **Questions or issues?** See [.claude.md](./.claude.md) for more context or check the GitHub issues.
