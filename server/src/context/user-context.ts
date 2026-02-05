@@ -4,7 +4,6 @@
  */
 
 import { EmailProvider } from '../providers/email-provider';
-import { CalendarProvider } from '../providers/calendar-provider';
 
 export interface UserProfile {
   userId: string;
@@ -42,16 +41,13 @@ const defaultProfile: UserProfile = {
 
 export class UserContextProvider {
   private emailProvider: EmailProvider;
-  private calendarProvider: CalendarProvider;
   private profile: UserProfile;
 
   constructor(
     emailProvider: EmailProvider,
-    calendarProvider: CalendarProvider,
     profile: Partial<UserProfile> = {}
   ) {
     this.emailProvider = emailProvider;
-    this.calendarProvider = calendarProvider;
     this.profile = { ...defaultProfile, ...profile };
   }
 
@@ -64,29 +60,8 @@ export class UserContextProvider {
     // Get unread email count
     const unreadEmails = await this.emailProvider.search({ unread: true, limit: 100 });
 
-    // Get today's events
-    const todayEvents = await this.calendarProvider.getEventsForDate(now);
-
-    // Get upcoming events (next 2 hours)
-    const upcomingEvents = todayEvents.filter(event => {
-      const eventStart = new Date(event.startTime);
-      const hoursUntil = (eventStart.getTime() - now.getTime()) / (1000 * 60 * 60);
-      return hoursUntil > 0 && hoursUntil <= 2;
-    });
-
-    // Format activity summary
-    const recentActivity = this.formatRecentActivity(unreadEmails.length, todayEvents.length);
-
-    // Format upcoming meetings
-    const upcomingMeetings = upcomingEvents.length > 0
-      ? upcomingEvents.map(e => {
-          const time = new Date(e.startTime).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-          });
-          return `${e.title} at ${time}`;
-        }).join(', ')
-      : undefined;
+    // Format activity summary (calendar context removed - will use Titan Calendar APIs via tools)
+    const recentActivity = this.formatRecentActivity(unreadEmails.length, 0);
 
     return {
       currentTime: this.formatDateTime(now),
@@ -94,7 +69,6 @@ export class UserContextProvider {
       userEmail: this.profile.email,
       userName: this.profile.name,
       recentActivity,
-      upcomingMeetings,
       unreadCount: unreadEmails.length,
     };
   }

@@ -5,6 +5,9 @@
 export { ToolRegistry } from './tool-registry';
 export { ToolExecutor } from './tool-executor';
 
+// Re-export key types from types/tools for convenience
+export type { ToolDefinition, ToolModel, ToolDomain, ToolAction, ToolUsage, ToolHandler, ToolResult } from '../types/tools';
+
 export {
   searchEmailsTool,
   getEmailDetailsTool,
@@ -16,13 +19,25 @@ export {
 } from './email-tools';
 
 export {
-  searchCalendarTool,
-  getTodayEventsTool,
-  getUpcomingEventsTool,
-  getFreeBusyTool,
-  createSearchCalendarHandler,
-  createGetTodayEventsHandler,
-  createGetUpcomingEventsHandler,
-  createGetFreeBusyHandler,
-  registerCalendarTools,
-} from './calendar-tools';
+  fetchMessagesTool,
+  fetchMessageSnippetTool,
+  fetchMessageBodyTool,
+  titanSearchEmailsTool,
+  createFetchMessagesHandler,
+  createFetchMessageSnippetHandler,
+  createFetchMessageBodyHandler,
+  createTitanSearchEmailsHandler,
+  registerMessageTools,
+} from './message-tools';
+
+export {
+  fetchCalendarListTool,
+  fetchCalendarTool,
+  fetchCalendarEventsTool,
+  updateCalendarTool,
+  createFetchCalendarListHandler,
+  createFetchCalendarHandler,
+  createFetchCalendarEventsHandler,
+  createUpdateCalendarHandler,
+  registerTitanCalendarTools,
+} from './titan-calendar-tools';

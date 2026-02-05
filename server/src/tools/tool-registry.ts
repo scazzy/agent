@@ -1,17 +1,19 @@
 /**
  * Tool Registry
- * Central registry for tool definitions and handlers
+ * Central registry for tool definitions and handlers.
+ * Supports domain-based filtering for intent-driven tool selection.
  */
 
-import { ToolDefinition, ToolHandler, RegisteredTool } from '../types/tools';
+import { ToolDefinition, ToolModel, ToolDomain, ToolHandler, RegisteredTool } from '../types/tools';
 
 export class ToolRegistry {
   private tools: Map<string, RegisteredTool> = new Map();
 
   /**
-   * Register a tool with its handler
+   * Register a tool with its handler.
+   * Accepts both ToolDefinition and ToolModel (enhanced).
    */
-  register(definition: ToolDefinition, handler: ToolHandler): void {
+  register(definition: ToolDefinition | ToolModel, handler: ToolHandler): void {
     if (this.tools.has(definition.name)) {
       console.warn(`Tool "${definition.name}" is being overwritten`);
     }
@@ -38,6 +40,23 @@ export class ToolRegistry {
    */
   getAllDefinitions(): ToolDefinition[] {
     return Array.from(this.tools.values()).map(t => t.definition);
+  }
+
+  /**
+   * Get tool definitions filtered by domain(s).
+   * Tools without a domain (plain ToolDefinition) are always included.
+   */
+  getDefinitionsByDomain(domains: (ToolDomain | 'general')[]): ToolDefinition[] {
+    return Array.from(this.tools.values())
+      .filter(t => {
+        const def = t.definition;
+        if ('domain' in def) {
+          return domains.includes((def as ToolModel).domain);
+        }
+        // Plain ToolDefinition without domain - always include
+        return true;
+      })
+      .map(t => t.definition);
   }
 
   /**

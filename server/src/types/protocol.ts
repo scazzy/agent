@@ -21,9 +21,16 @@ export interface Message {
   widgetAction?: WidgetAction;
 }
 
+export interface SessionInfo {
+  session: string;
+  baseUrl?: string;
+  clusterId?: number;
+}
+
 export interface ChatRequest {
   messages: Message[];
   conversationId?: string;
+  sessionInfo?: SessionInfo;
 }
 
 // ============================================================================
@@ -201,6 +208,28 @@ export interface FlightCardData {
   };
   class?: 'economy' | 'business' | 'first';
   stops?: number;
+}
+
+// ============================================================================
+// Agent Response Schema (structured LLM output)
+// ============================================================================
+
+export interface ToolCallRequest {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+/** The structured JSON format the LLM must return */
+export interface AgentResponseSchema {
+  /** Brief internal reasoning (optional, not shown to user) */
+  thinking?: string;
+  /** Tool calls to execute before responding */
+  tool_calls?: ToolCallRequest[];
+  /** Natural language response to the user */
+  response: string;
+  /** Widgets to render in the UI */
+  widgets?: WidgetBlock[];
 }
 
 // ============================================================================
