@@ -39,7 +39,7 @@ export const ChatSidebar: React.FC = () => {
           <RobotOutlined style={{ fontSize: 24, color: '#1890ff' }} />
           <Flex vertical gap={0}>
             <Title level={4} style={{ margin: 0 }}>
-              Scazzy AI
+              Sophia
             </Title>
             <Text type="secondary" style={{ fontSize: 12 }}>
               Productivity agent

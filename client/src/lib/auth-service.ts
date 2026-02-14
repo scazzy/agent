@@ -11,22 +11,77 @@ import {
   AuthErrorCode,
 } from '../types/auth';
 
-// Staging base URL
-const STAGING_BASE_URL = 'https://flockmail-backend.flock-staging.com/fa';
+// Environment URLs
+const STAGING_LOGIN_URL = 'https://flockmail-backend.flock-staging.com/fa';
+const PRODUCTION_LOGIN_URL = 'https://api.titan.email/fa';
+
+// Determine environment (can be overridden via localStorage for testing)
+const getEnvironment = (): 'staging' | 'production' => {
+  const override = localStorage.getItem('titan_env');
+  if (override === 'production' || override === 'staging') return override;
+  
+  // Default to staging for now (change to 'production' when ready)
+  return 'staging';
+};
+
+const getLoginBaseUrl = (): string => {
+  return getEnvironment() === 'production' ? PRODUCTION_LOGIN_URL : STAGING_LOGIN_URL;
+};
 
 // Session storage key
 const SESSION_STORAGE_KEY = 'flockmail_session';
 
 /**
- * Generate a unique installation ID
+ * Generate a unique installation ID (format: Chrome-browser-timestamp)
  */
 function generateInstallationId(): string {
-  const stored = localStorage.getItem('flockmail_iid');
+  const stored = localStorage.getItem('titan_iid');
   if (stored) return stored;
 
-  const iid = `web-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-  localStorage.setItem('flockmail_iid', iid);
+  const browserName = getBrowserName();
+  const iid = `${browserName}-browser-${Date.now()}`;
+  localStorage.setItem('titan_iid', iid);
   return iid;
+}
+
+/**
+ * Generate a client request ID
+ */
+function generateCrid(): string {
+  const now = new Date();
+  const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  const random = Math.random().toString(36).substring(2, 6);
+  return `w_${dateStr}_MAR_9_123_${random}`;
+}
+
+/**
+ * Get browser name
+ */
+function getBrowserName(): string {
+  const ua = navigator.userAgent;
+  if (ua.includes('Chrome')) return 'Chrome';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari')) return 'Safari';
+  if (ua.includes('Edge')) return 'Edge';
+  return 'Browser';
+}
+
+/**
+ * Get browser version
+ */
+function getBrowserVersion(): string {
+  const ua = navigator.userAgent;
+  const match = ua.match(/(Chrome|Firefox|Safari|Edge)\/(\d+)/);
+  return match ? match[2] : '100';
+}
+
+/**
+ * Build x-user-agent header
+ */
+function buildXUserAgent(): string {
+  const browserName = getBrowserName();
+  const browserVersion = getBrowserVersion();
+  return `os=MacOS;os-version=10_15_7;app-version=5.56.0;locale=${navigator.language || 'en-US'};browser-version=${browserVersion};browser-name=${browserName};tp=titan;client=web_mail`;
 }
 
 /**
@@ -35,8 +90,22 @@ function generateInstallationId(): string {
 export class AuthService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = STAGING_BASE_URL) {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl || getLoginBaseUrl();
+  }
+
+  /**
+   * Get current environment
+   */
+  getEnvironment(): 'staging' | 'production' {
+    return getEnvironment();
+  }
+
+  /**
+   * Set environment (for testing)
+   */
+  static setEnvironment(env: 'staging' | 'production'): void {
+    localStorage.setItem('titan_env', env);
   }
 
   /**
@@ -48,6 +117,8 @@ export class AuthService {
       password,
       iid: generateInstallationId(),
       device: 'browser',
+      crid: generateCrid(),
+      rp: { brand: 'Titan' },
     };
 
     try {
@@ -55,6 +126,9 @@ export class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json, text/plain, */*',
+          'x-tth': '0:1',
+          'x-user-agent': buildXUserAgent(),
         },
         body: JSON.stringify(request),
       });

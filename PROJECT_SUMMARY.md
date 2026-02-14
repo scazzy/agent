@@ -225,7 +225,7 @@ cd client
 npm install
 npm run dev
 
-# Open browser: http://localhost:5173
+# Open browser: http://localhost:3000
 ```
 
 ### Production Build

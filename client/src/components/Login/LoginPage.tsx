@@ -3,9 +3,10 @@
  */
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Flex } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert, Flex, Switch } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { AuthService } from '../../lib/auth-service';
 
 const { Title, Text } = Typography;
 
@@ -17,6 +18,14 @@ interface LoginFormValues {
 export function LoginPage() {
   const { login, error, clearError, isLoading } = useAuth();
   const [form] = Form.useForm();
+  const [isProduction, setIsProduction] = useState(() => {
+    return localStorage.getItem('titan_env') === 'production';
+  });
+
+  const handleEnvChange = (checked: boolean) => {
+    setIsProduction(checked);
+    AuthService.setEnvironment(checked ? 'production' : 'staging');
+  };
 
   const handleSubmit = async (values: LoginFormValues) => {
     clearError();
@@ -33,10 +42,43 @@ export function LoginPage() {
       align="center"
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: isProduction 
+          ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: 24,
+        position: 'relative',
       }}
     >
+      {/* Environment Switch */}
+      <Flex
+        align="center"
+        gap={8}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 24,
+          background: 'rgba(255, 255, 255, 0.9)',
+          padding: '8px 16px',
+          borderRadius: 20,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Text style={{ fontSize: 12, color: isProduction ? '#999' : '#667eea', fontWeight: 500 }}>
+          Staging
+        </Text>
+        <Switch
+          checked={isProduction}
+          onChange={handleEnvChange}
+          size="small"
+          style={{ 
+            backgroundColor: isProduction ? '#11998e' : undefined 
+          }}
+        />
+        <Text style={{ fontSize: 12, color: isProduction ? '#11998e' : '#999', fontWeight: 500 }}>
+          Production
+        </Text>
+      </Flex>
+
       <Card
         style={{
           width: '100%',
@@ -51,7 +93,7 @@ export function LoginPage() {
         <Flex vertical align="center" gap={8} style={{ marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>📧</div>
           <Title level={2} style={{ margin: 0, fontWeight: 600 }}>
-            Scazzy AI
+            Project Sophia
           </Title>
           <Text type="secondary">Sign in with your Titan Email account</Text>
         </Flex>
@@ -120,15 +162,16 @@ export function LoginPage() {
         </Form>
 
         <Text
-          type="secondary"
           style={{
             display: 'block',
             textAlign: 'center',
             marginTop: 24,
             fontSize: 12,
+            color: isProduction ? '#11998e' : '#667eea',
+            fontWeight: 500,
           }}
         >
-          Staging Environment
+          {isProduction ? '🟢 Production Environment' : '🟣 Staging Environment'}
         </Text>
       </Card>
     </Flex>

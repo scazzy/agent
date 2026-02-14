@@ -76,11 +76,11 @@ cd client
 npm run dev
 ```
 
-Client will run on `http://localhost:5173`
+Client will run on `http://localhost:3000`
 
 3. **Open your browser:**
 
-Navigate to `http://localhost:5173`
+Navigate to `http://localhost:3000`
 
 ## Usage
 

@@ -244,10 +244,24 @@ export class Agent {
     }
 
     // No tool calls - send final response
-    let responseText = parsed.response || this.extractPlainText(fullResponse);
+    // Handle both string and object response formats from LLM
+    let responseText: string;
+    if (typeof parsed.response === 'string') {
+      responseText = parsed.response;
+    } else if (typeof parsed.response === 'object' && parsed.response !== null) {
+      // LLM returned structured response - extract summary or text field
+      const respObj = parsed.response as Record<string, unknown>;
+      responseText = (respObj.summary as string) || 
+                     (respObj.text as string) || 
+                     (respObj.message as string) ||
+                     this.extractPlainText(fullResponse);
+      console.log('[Agent] Extracted response from object, length:', responseText.length);
+    } else {
+      responseText = this.extractPlainText(fullResponse);
+    }
 
     // Fallback: if response is empty after tool calls (iteration > 0), provide a default
-    if (!responseText.trim() && iteration > 0) {
+    if (!responseText || !responseText.trim() && iteration > 0) {
       console.log('[Agent] Empty response after tool calls, using fallback');
       responseText = "I've completed the search but couldn't find any matching results. Try a different search term or check your filters.";
     }

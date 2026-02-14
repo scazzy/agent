@@ -7,7 +7,8 @@ export interface LoginRequest {
   password: string;
   iid: string;
   device: 'android' | 'ios' | 'browser';
-  rp?: Record<string, unknown>;
+  crid?: string;  // Client request ID
+  rp?: Record<string, unknown>;  // Reporting params
 }
 
 export interface OrderInfo {

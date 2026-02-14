@@ -39,13 +39,13 @@ You should see:
 ```
 VITE v5.x.x  ready in xxx ms
 
-➜  Local:   http://localhost:5173/
+➜  Local:   http://localhost:3000/
 ➜  Network: use --host to expose
 ```
 
 ### 3. Open Browser
 
-Navigate to: **http://localhost:5173**
+Navigate to: **http://localhost:3000**
 
 ## Try It Out
 
@@ -219,11 +219,11 @@ lsof -ti:3001 | xargs kill -9
 
 ### Client won't start
 
-**Error**: `EADDRINUSE: address already in use :::5173`
+**Error**: `EADDRINUSE: address already in use :::3000`
 
-**Fix**: Kill process on port 5173
+**Fix**: Kill process on port 3000
 ```bash
-lsof -ti:5173 | xargs kill -9
+lsof -ti:3000 | xargs kill -9
 ```
 
 ### Widgets not rendering
